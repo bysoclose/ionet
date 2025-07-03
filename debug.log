@@ -1,0 +1,4 @@
+2025-07-04 02:18:09,906 - INFO - HTTP Request: POST https://api.intelligence.io.solutions/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-07-04 02:18:42,096 - INFO - Retrying request to /chat/completions in 0.456155 seconds
+2025-07-04 02:18:45,768 - INFO - HTTP Request: POST https://api.intelligence.io.solutions/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-07-04 02:18:45,773 - WARNING - JSON ayrıştırma hatası, ham sonuç kullanılıyor: Error: Extreme profanity detected

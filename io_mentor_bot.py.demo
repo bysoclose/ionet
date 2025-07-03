@@ -2,8 +2,6 @@ import sys
 import asyncio
 import logging
 import warnings
-import os
-from dotenv import load_dotenv
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QTextEdit, QSpacerItem,
@@ -11,21 +9,24 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
-from utils import fix_turkish_chars, filter_key_points, detect_correct_agent, clean_response_text
+from utils import fix_turkish_chars, filter_key_points, detect_correct_agent
 from agents_config import translations, agent_task_mapping, agent_icons
 from workflow import run_workflow
 import nest_asyncio
+from dotenv import load_dotenv
+import os
 import json
+import re
 
 # DeprecationWarning'leri bastır
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# Log ayarları (sadece debug.log'a yaz)
 logging.basicConfig(
-    level=logging.INFO,  # DEBUG yerine INFO yapıldı
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('debug.log', mode='w', encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
     ],
     force=True
 )
@@ -49,7 +50,7 @@ def on_click_copy(text, current_language):
 class AgentHelpDialog(QDialog):
     def __init__(self, current_language, parent=None):
         super().__init__(parent)
-        logger.debug("AgentHelpDialog başlatılıyor...")
+        logger.debug("AgentHelpDialog başlatılıyor")
         self.setWindowTitle(translations[current_language]["help_title"])
         self.setGeometry(200, 200, 500, 400)
         layout = QVBoxLayout(self)
@@ -352,7 +353,6 @@ class IOAssistant(QMainWindow):
                         logger.error("İkon geçersiz veya bozuk: %s", icon_path)
                     else:
                         self.agent_combo.setItemIcon(self.agent_combo.findText(agent), icon)
-                        logger.debug("İkon yüklendi: %s", icon_path)
                 except Exception as e:
                     logger.error("İkon yüklenirken hata: %s, %s", icon_path, str(e))
         if current_agent in translations[self.current_language]["agent_descriptions"]:
@@ -370,11 +370,8 @@ class IOAssistant(QMainWindow):
                         logger.error("Dil ikonu geçersiz veya bozuk: %s", icon_path)
                     else:
                         self.language_combo.setItemIcon(self.language_combo.findText(lang), icon)
-                        logger.debug("Dil ikonu yüklendi: %s", icon_path)
                 except Exception as e:
                     logger.error("Dil ikonu yüklenirken hata: %s, %s", icon_path, str(e))
-            else:
-                logger.warning("Dil ikonu bulunamadı: %s", icon_path)
         self.update_example_label(self.agent_combo.currentText())
 
     def update_example_label(self, agent_name):
@@ -441,63 +438,48 @@ class IOAssistant(QMainWindow):
         dialog.exec_()
 
     def handle_result(self, result):
-        logger.debug("Sonuç işleniyor: %s", result)
+        logger.debug("Ham API yanıtı: %s", result)  # Ham yanıtı logla
         self.last_result = result
         selected_agent_name = self.agent_combo.currentText()
-        user_friendly_output = result
+        user_friendly_output = result  # Varsayılan olarak ham sonucu kullan
 
         try:
-            # JSON yanıtını ayrıştır
-            try:
-                result_dict = json.loads(result.replace("'", "\"").replace("None", "null"))
-                if isinstance(result_dict, dict) and "results" in result_dict:
-                    task_key = list(result_dict["results"].keys())[0] if result_dict["results"] else "custom-task"
-                    result_content = result_dict["results"].get(task_key, result)
-                else:
-                    result_content = result
-            except json.JSONDecodeError:
-                result_content = result
-                logger.warning("JSON ayrıştırma hatası, ham sonuç kullanılıyor: %s", result)
-
             if selected_agent_name == "Moderation Agent":
                 try:
-                    if isinstance(result_content, dict):
-                        issues = []
-                        if result_content.get('hate_speech', 0.0) >= 0.5:
-                            issues.append("hate speech" if self.current_language == "en" else "nefret söylemi" if self.current_language == "tr" else "Hassrede")
-                        if result_content.get('harassment', 0.0) >= 0.5:
-                            issues.append("harassment" if self.current_language == "en" else "taciz" if self.current_language == "tr" else "Belästigung")
-                        if result_content.get('extreme_profanity', 0.0) >= 0.5:
-                            issues.append("extreme profanity" if self.current_language == "en" else "aşırı küfür" if self.current_language == "tr" else "extreme Obszönität")
-                        if issues:
-                            user_friendly_output = translations[self.current_language]["issues_detected"].format(issues=", ".join(issues))
-                            QMessageBox.warning(self, "Content Warning", translations[self.current_language]["content_warning"])
-                        else:
-                            user_friendly_output = translations[self.current_language]["safe_content"]
+                    result_dict = json.loads(result.replace("'", "\""))
+                    issues = []
+                    if result_dict.get('hate_speech', 0.0) >= 0.5:
+                        issues.append("hate speech" if self.current_language == "en" else "nefret söylemi" if self.current_language == "tr" else "Hassrede")
+                    if result_dict.get('harassment', 0.0) >= 0.5:
+                        issues.append("harassment" if self.current_language == "en" else "taciz" if self.current_language == "tr" else "Belästigung")
+                    if result_dict.get('extreme_profanity', 0.0) >= 0.5:
+                        issues.append("extreme profanity" if self.current_language == "en" else "aşırı küfür" if self.current_language == "tr" else "extreme Obszönität")
+                    if issues:
+                        user_friendly_output = translations[self.current_language]["issues_detected"].format(issues=", ".join(issues))
+                        QMessageBox.warning(self, "Content Warning", translations[self.current_language]["content_warning"])
                     else:
-                        result_lower = result_content.lower()
-                        issues = []
-                        if "hate speech" in result_lower:
-                            issues.append("hate speech" if self.current_language == "en" else "nefret söylemi" if self.current_language == "tr" else "Hassrede")
-                            user_friendly_output = translations[self.current_language]["hate_speech_detected"]
-                        elif "harassment" in result_lower:
-                            issues.append("harassment" if self.current_language == "en" else "taciz" if self.current_language == "tr" else "Belästigung")
-                            user_friendly_output = translations[self.current_language]["harassment_detected"]
-                        elif "extreme profanity" in result_lower:
-                            issues.append("extreme profanity" if self.current_language == "en" else "aşırı küfür" if self.current_language == "tr" else "extreme Obszönität")
-                            user_friendly_output = translations[self.current_language]["extreme_profanity_detected"]
-                        else:
-                            user_friendly_output = translations[self.current_language]["safe_content"]
-                        if issues:
-                            user_friendly_output = translations[self.current_language]["issues_detected"].format(issues=", ".join(issues))
-                            QMessageBox.warning(self, "Content Warning", translations[self.current_language]["content_warning"])
-                except Exception as e:
-                    logger.error("Moderation Agent hatası: %s", str(e))
-                    user_friendly_output = f"Hata: Çıktı işlenemedi. Ham sonuç: {result_content}"
-
+                        user_friendly_output = translations[self.current_language]["safe_content"]
+                except json.JSONDecodeError:
+                    result_lower = result.lower()
+                    issues = []
+                    if "hate speech" in result_lower:
+                        issues.append("hate speech" if self.current_language == "en" else "nefret söylemi" if self.current_language == "tr" else "Hassrede")
+                        user_friendly_output = translations[self.current_language]["hate_speech_detected"]
+                    elif "harassment" in result_lower:
+                        issues.append("harassment" if self.current_language == "en" else "taciz" if self.current_language == "tr" else "Belästigung")
+                        user_friendly_output = translations[self.current_language]["harassment_detected"]
+                    elif "extreme profanity" in result_lower:
+                        issues.append("extreme profanity" if self.current_language == "en" else "aşırı küfür" if self.current_language == "tr" else "extreme Obszönität")
+                        user_friendly_output = translations[self.current_language]["extreme_profanity_detected"]
+                    else:
+                        user_friendly_output = f"Hata: Çıktı işlenemedi. Ham sonuç: {result}"
+                    if issues:
+                        user_friendly_output = translations[self.current_language]["issues_detected"].format(issues=", ".join(issues))
+                        QMessageBox.warning(self, "Content Warning", translations[self.current_language]["content_warning"])
+            
             elif selected_agent_name == "Sentiment Analysis Agent":
                 try:
-                    sentiment_score = float(result_content)
+                    sentiment_score = float(result)
                     if sentiment_score >= 0.5:
                         user_friendly_output = translations[self.current_language]["positive_sentiment"]
                     elif sentiment_score <= -0.5:
@@ -505,8 +487,8 @@ class IOAssistant(QMainWindow):
                     else:
                         user_friendly_output = translations[self.current_language]["neutral_sentiment"]
                 except ValueError:
-                    sentiment = str(result_content).lower()
-                    if "positive" in sentiment:
+                    sentiment = result.lower()
+                    if "positive gy" in sentiment:
                         user_friendly_output = translations[self.current_language]["positive_sentiment"]
                     elif "negative" in sentiment:
                         user_friendly_output = translations[self.current_language]["negative_sentiment"]
@@ -514,13 +496,15 @@ class IOAssistant(QMainWindow):
                         user_friendly_output = translations[self.current_language]["neutral_sentiment"]
                     else:
                         user_friendly_output = translations[self.current_language]["unknown_sentiment_error"]
-
+            
             elif selected_agent_name == "Named Entity Recognizer":
                 try:
-                    if isinstance(result_content, dict):
-                        entities_data = result_content.get("response", result_content) if "response" in result_content else result_content
+                    result_clean = result.replace("'", "\"").replace("None", "null")
+                    result_dict = json.loads(result_clean)
+                    if "type" in result_dict and result_dict["type"] == "function" and "response" in result_dict["parameters"]:
+                        entities_data = result_dict["parameters"]["response"][0][1]
                     else:
-                        entities_data = json.loads(result_content.replace("'", "\"").replace("None", "null"))
+                        entities_data = result_dict
                     entities = []
                     for key, value in entities_data.items():
                         if value and isinstance(value, list):
@@ -533,31 +517,27 @@ class IOAssistant(QMainWindow):
                     else:
                         user_friendly_output = translations[self.current_language]["entities_detected"].format(entities="None")
                 except json.JSONDecodeError:
-                    user_friendly_output = f"Hata: Çıktı işlenemedi. Ham sonuç: {result_content}"
-
+                    user_friendly_output = f"Hata: Çıktı işlenemedi. Ham sonuç: {result}"
+            
             elif selected_agent_name == "Classification Agent":
-                category = str(result_content)
+                category = result
                 if self.current_language == "tr":
                     category = fix_turkish_chars(category)
                 category_map = translations[self.current_language]["classification_categories"]
                 translated_category = category_map.get(category, category)
                 user_friendly_output = translations[self.current_language]["classification_result"].format(category=translated_category)
-
+            
             elif selected_agent_name == "Translation Agent":
                 if self.current_language == "tr":
-                    result_content = fix_turkish_chars(str(result_content))
-                user_friendly_output = translations[self.current_language]["translation_result"].format(translated_text=result_content)
-
+                    result = fix_turkish_chars(result)
+                user_friendly_output = translations[self.current_language]["translation_result"].format(translated_text=result)
+            
             elif selected_agent_name == "Summary Agent":
                 try:
-                    if isinstance(result_content, dict):
-                        summary = result_content.get("summary", str(result_content))
-                        key_points = result_content.get("key_points", [])
-                    else:
-                        result_clean = result_content.replace("'", "\"").replace("None", "null")
-                        result_dict = json.loads(result_clean)
-                        summary = result_dict.get("summary", result_content)
-                        key_points = result_dict.get("key_points", [])
+                    result_clean = result.replace("'", "\"").replace("None", "null")
+                    result_dict = json.loads(result_clean)
+                    summary = result_dict.get("summary", result)
+                    key_points = result_dict.get("key_points", [])
                     if self.current_language == "tr":
                         summary = fix_turkish_chars(summary)
                         key_points = filter_key_points([fix_turkish_chars(kp) for kp in key_points], self.input_entry.text().strip())
@@ -568,9 +548,9 @@ class IOAssistant(QMainWindow):
                     key_points_str = ", ".join(key_points) if key_points else "None"
                     user_friendly_output = translations[self.current_language]["summary_result"].format(summary=summary, key_points=key_points_str)
                 except json.JSONDecodeError:
-                    summary_match = re.search(r"summary='(.*?)'", result_content)
-                    key_points_match = re.search(r"key_points=\[(.*?)\]", result_content)
-                    summary = summary_match.group(1) if summary_match else result_content
+                    summary_match = re.search(r"summary='(.*?)'", result)
+                    key_points_match = re.search(r"key_points=\[(.*?)\]", result)
+                    summary = summary_match.group(1) if summary_match else result
                     key_points = []
                     if key_points_match:
                         key_points = [item.strip().strip("'") for item in key_points_match.group(1).split(", ")]
@@ -583,21 +563,27 @@ class IOAssistant(QMainWindow):
                         key_points = filter_key_points(key_points, self.input_entry.text().strip())
                     key_points_str = ", ".join(key_points) if key_points else "None"
                     user_friendly_output = translations[self.current_language]["summary_result"].format(summary=summary, key_points=key_points_str)
-
+            
             elif selected_agent_name == "Custom Agent":
-                if isinstance(result_content, dict) and "custom-task" in result_content:
-                    result_content = result_content["custom-task"]
-                elif isinstance(result_dict, dict) and "results" in result_dict and "custom-task" in result_dict["results"]:
-                    result_content = result_dict["results"]["custom-task"]
-                # Anlamsız metinleri ve kod parçalarını temizle
-                result_content = clean_response_text(str(result_content))
+                # Ham yanıtı doğrudan kullan ve temizle
+                clean_result = result
+                # Anlamsız metinleri temizle
+                clean_result = re.sub(r'[^\x00-\x7FğüşöçıİĞÜŞÖÇ\s.,!?]+', '', clean_result)  # ASCII dışı karakterleri kaldır
+                clean_result = re.sub(r'\b(biofosDKL|srcputs27088|uncommentgsub|オンライン|aborted|opción|Poncustom\.xaml\.af|इप|tục|DU|conservativesWhoNom|kterýnoun)\b', '', clean_result)  # Anlamsız kelimeleri kaldır
+                clean_result = ' '.join(clean_result.split())  # Fazla boşlukları temizle
                 if self.current_language == "tr":
-                    result_content = fix_turkish_chars(result_content)
-                user_friendly_output = translations[self.current_language]["custom_result"].format(response=result_content)
+                    clean_result = fix_turkish_chars(clean_result)  # Türkçe karakter düzeltmeleri
+                user_friendly_output = translations[self.current_language]["custom_result"].format(response=clean_result)
 
         except Exception as e:
-            logger.error("Sonuç işleme hatası: %s", str(e))
-            user_friendly_output = f"Hata: Çıktı işlenemedi. Ham sonuç: {result_content}"
+            logger.error("Sonuç işlenirken hata: %s", str(e))
+            # Hata durumunda ham sonucu temizle ve kullan
+            clean_result = re.sub(r'[^\x00-\x7FğüşöçıİĞÜŞÖÇ\s.,!?]+', '', result)
+            clean_result = re.sub(r'\b(biofosDKL|srcputs27088|uncommentgsub|オンライン|aborted|opción|Poncustom\.xaml\.af|इप|tục|DU|conservativesWhoNom|kterýnoun)\b', '', clean_result)
+            clean_result = ' '.join(clean_result.split())
+            if self.current_language == "tr":
+                clean_result = fix_turkish_chars(clean_result)
+            user_friendly_output = translations[self.current_language]["custom_result"].format(response=clean_result)
 
         self.chat_textbox.append(f"You: {self.input_entry.text().strip()}\nAgent: {user_friendly_output}\n")
         self.input_entry.clear()
