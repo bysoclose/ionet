@@ -35,7 +35,13 @@ def detect_correct_agent(user_input, current_language):
         return "Classification Agent"
     elif "translate" in input_lower or "çevir" in input_lower or "übersetzung" in input_lower or "türkis" in input_lower or "ispanyolca" in input_lower or "fransızca" in input_lower or "ingilizce" in input_lower:
         return "Translation Agent"
-    # Basit selamlaşma veya yer sorguları için de Translation Agent öner
-    elif any(kw in input_lower for kw in ["merhaba", "hello", "hallo", "nasılsın", "how are you", "burası neresi", "where is this"]):
+    elif any(kw in input_lower for kw in ["merhaba", "hello", "hallo", "nasılsın", "how are you", "burası neresi", "where is this", "nerede", "naber"]):
         return "Translation Agent"
     return "Custom Agent"
+
+def parse_json_safely(json_str):
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON parsing error: {str(e)}")
+        return {}

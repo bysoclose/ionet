@@ -1,7 +1,7 @@
 import os
 import logging
 from agents_config import agent_task_mapping
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ async def run_workflow(user_input, selected_agent_name, current_language):
         clean_input = user_input.lower()
         text_to_translate = clean_input.split(":", 1)[1].strip() if ":" in clean_input else clean_input
         target_lang = None
-        source_lang = None
+        source_lang = "auto"
 
         # Hedef dili algıla
         if "ispanyolcaya çevir" in clean_input or "ispanyolca" in clean_input:
@@ -48,10 +48,10 @@ async def run_workflow(user_input, selected_agent_name, current_language):
         elif "ingilizceye çevir" in clean_input or "ingilizce" in clean_input:
             target_lang = "en"
         else:
-            # Hedef dil belirtilmemişse, varsayılan olarak İngilizce
+            # Hedef dil belirtilmemişse, arayüz diline göre varsayılan
             target_lang = "en" if current_language != "en" else "tr"
 
-        # Kaynak dili algıla (isteğe bağlı, googletrans otomatik algılıyor)
+        # Kaynak dili ayarla
         if current_language == "tr":
             source_lang = "tr"
         elif current_language == "en":
@@ -60,8 +60,8 @@ async def run_workflow(user_input, selected_agent_name, current_language):
             source_lang = "de"
 
         try:
-            translator = Translator()
-            translation = translator.translate(text_to_translate, src=source_lang, dest=target_lang).text
+            translator = GoogleTranslator(source=source_lang, target=target_lang)
+            translation = translator.translate(text_to_translate)
             return translation
         except Exception as e:
             logger.error(f"Translation error: {str(e)}")
