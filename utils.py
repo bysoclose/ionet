@@ -1,6 +1,7 @@
 import re
 import json
 import os
+import logging
 from agents_config import translations
 
 def fix_turkish_chars(text):
@@ -22,26 +23,35 @@ def filter_key_points(key_points, user_input):
     return filtered_points[:3]
 
 def detect_correct_agent(user_input, current_language):
-    input_lower = user_input.lower()
-    if "summarize" in input_lower or "özet" in input_lower or "zusammenfassung" in input_lower:
+    input_lower = user_input.lower().strip()
+
+    # Özetleme için
+    if any(kw in input_lower for kw in ["summarize", "özet", "zusammenfassung", "özetle"]):
         return "Summary Agent"
-    elif "sentiment" in input_lower or "duygu" in input_lower or "stimmung" in input_lower:
+    elif len(input_lower.split()) > 20:  # Uzun metinler için Summary Agent öner
+        return "Summary Agent"
+
+    # Duygu analizi için
+    elif any(kw in input_lower for kw in ["sentiment", "duygu", "stimmung", "hızlı", "kullanışlı", "harika", "berbat", "güzel", "kötü"]):
         return "Sentiment Analysis Agent"
-    elif "entity" in input_lower or "entities" in input_lower or "varlık" in input_lower or "entitäten" in input_lower:
+
+    # Varlık tanıma için
+    elif any(kw in input_lower for kw in ["entity", "entities", "varlık", "entitäten", "elon musk", "tesla", "spacex", "california"]):
         return "Named Entity Recognizer"
-    elif "moderate" in input_lower or "denetim" in input_lower or "harmful" in input_lower or any(kw in input_lower for kw in ["kötü", "pislik", "göt", "orospu"]):
+
+    # Moderasyon için
+    elif any(kw in input_lower for kw in ["moderate", "denetim", "harmful", "uygunsuz", "berbat", "dolandırıcı", "para israfı"]):
         return "Moderation Agent"
-    elif "classify" in input_lower or "sınıflandır" in input_lower or "klassifizierung" in input_lower or "pozitif" in input_lower or "positive" in input_lower:
+
+    # Sınıflandırma için
+    elif any(kw in input_lower for kw in ["classify", "sınıflandır", "klassifizierung", "pozitif", "positive", "negatif", "negative", "harika", "mükemmel", "inanılmaz"]):
         return "Classification Agent"
-    elif "translate" in input_lower or "çevir" in input_lower or "übersetzung" in input_lower or "türkis" in input_lower or "ispanyolca" in input_lower or "fransızca" in input_lower or "ingilizce" in input_lower:
+
+    # Çeviri için
+    elif any(kw in input_lower for kw in ["translate", "çevir", "übersetzung", "türkis", "ispanyolca", "fransızca", "ingilizce"]):
         return "Translation Agent"
     elif any(kw in input_lower for kw in ["merhaba", "hello", "hallo", "nasılsın", "how are you", "burası neresi", "where is this", "nerede", "naber"]):
         return "Translation Agent"
-    return "Custom Agent"
 
-def parse_json_safely(json_str):
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError as e:
-        logging.error(f"JSON parsing error: {str(e)}")
-        return {}
+    # Varsayılan
+    return "Custom Agent"
