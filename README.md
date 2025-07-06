@@ -20,6 +20,9 @@ Ideal for:
 
 ## 🎥 Demo Video
 
+https://youtu.be/ou2yVMcDXzM
+
+
 Watch the demo: [AI Hack Mentor Bot Demo](https://github.com/user-attachments/assets/e7c8c6b7-8b6c-4e47-b8d7-ee9377b00503)
 
 ## ✨ Features
