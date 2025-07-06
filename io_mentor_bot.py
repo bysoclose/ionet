@@ -8,16 +8,15 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QTextEdit, QComboBox, QDialog, QMessageBox, QSpacerItem
 )
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
-from utils import fix_turkish_chars, filter_key_points, detect_correct_agent
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QSize  # QSize import edildi
+from utils import fix_turkish_chars, filter_key_points, detect_correct_agent, parse_json_safely
 from agents_config import translations, agent_task_mapping, agent_icons
 from social_links import create_social_links
 from workflow import run_workflow
 import nest_asyncio
 from dotenv import load_dotenv
-import ast  # String formatındaki Python dictionary’lerini ayrıştırmak için
+import ast
 
-# Loglama yapılandırması
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -114,9 +113,9 @@ class IOAssistant(QMainWindow):
         self.last_result = ""
         self.setWindowTitle(translations[self.current_language]["title"])
         self.setGeometry(100, 100, 800, 900)
+        self.setMinimumSize(800, 900)  # Sabit minimum boyut
         self.workers = []
 
-        # Dosya kontrolü
         required_files = ['background.jpg', 'corrections.json', 'languages.json']
         for file in required_files:
             if not os.path.exists(file):
@@ -133,7 +132,6 @@ class IOAssistant(QMainWindow):
         self.layout = QVBoxLayout(main_widget)
         logger.debug("Main widget created")
 
-        # Background image
         self.background_label = QLabel(main_widget)
         background_path = "background.jpg"
         if os.path.exists(background_path):
@@ -160,7 +158,6 @@ class IOAssistant(QMainWindow):
 
         self.layout.addSpacerItem(QSpacerItem(20, 40))
 
-        # Language selection
         language_widget = QWidget(self)
         language_layout = QHBoxLayout(language_widget)
         self.language_label = QLabel("Language:", self)
@@ -194,7 +191,6 @@ class IOAssistant(QMainWindow):
         language_layout.addStretch()
         self.layout.addWidget(language_widget, alignment=Qt.AlignLeft)
 
-        # Input area
         input_widget = QWidget(self)
         input_layout = QHBoxLayout(input_widget)
         self.agent_combo = QComboBox(self)
@@ -269,8 +265,8 @@ class IOAssistant(QMainWindow):
         button_layout.addStretch()
         self.layout.addWidget(button_widget, alignment=Qt.AlignCenter)
 
-        # Social media links
         self.social_widget = create_social_links(self, self.current_language, copy_to_clipboard)
+        self.social_widget.setMaximumWidth(800)  # Maksimum genişlik ile sınırla
         self.layout.addWidget(self.social_widget, alignment=Qt.AlignCenter)
 
         self.resizeEvent = self.on_resize
@@ -308,6 +304,7 @@ class IOAssistant(QMainWindow):
         self.technical_details_btn.setText(translations[self.current_language]["technical_details_button"])
         self.help_btn.setText(translations[self.current_language]["help_button"])
         self.social_widget = create_social_links(self, self.current_language, copy_to_clipboard)
+        self.social_widget.setMaximumWidth(800)  # Dil değişikliğinde hizalamayı koru
         self.layout.replaceWidget(self.layout.itemAt(self.layout.count()-1).widget(), self.social_widget)
         current_agent = self.agent_combo.currentText()
         self.agent_combo.clear()
