@@ -1,0 +1,24 @@
+2025-07-06 17:33:57,285 - DEBUG - Using selector: EpollSelector
+2025-07-06 17:33:57,286 - DEBUG - Starting application initialization
+2025-07-06 17:33:57,287 - DEBUG - Starting application
+2025-07-06 17:33:57,287 - DEBUG - Python version: 3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]
+2025-07-06 17:33:57,287 - DEBUG - Checking environment variables
+2025-07-06 17:33:57,342 - DEBUG - QApplication started
+2025-07-06 17:33:57,344 - DEBUG - Initializing IOAssistant
+2025-07-06 17:33:57,346 - DEBUG - Main widget created
+2025-07-06 17:33:57,386 - DEBUG - Loaded background.jpg
+2025-07-06 17:33:57,411 - DEBUG - Loaded language icon: icons/uk.png
+2025-07-06 17:33:57,412 - DEBUG - Loaded language icon: icons/tr.png
+2025-07-06 17:33:57,420 - DEBUG - Loaded language icon: icons/de.png
+2025-07-06 17:33:57,456 - DEBUG - Loaded icon: icons/summary.png
+2025-07-06 17:33:57,461 - DEBUG - Loaded icon: icons/sentiment.png
+2025-07-06 17:33:57,465 - DEBUG - Loaded icon: icons/entity.png
+2025-07-06 17:33:57,466 - DEBUG - Loaded icon: icons/moderation.png
+2025-07-06 17:33:57,468 - DEBUG - Loaded icon: icons/classification.png
+2025-07-06 17:33:57,469 - DEBUG - Loaded icon: icons/translation.png
+2025-07-06 17:33:57,470 - DEBUG - Loaded icon: icons/custom.png
+2025-07-06 17:33:57,527 - DEBUG - Updating example label: Summary Agent
+2025-07-06 17:33:57,527 - DEBUG - IOAssistant UI created
+2025-07-06 17:33:58,792 - DEBUG - Resizing window
+2025-07-06 17:33:58,799 - DEBUG - Window shown
+2025-07-06 17:33:58,800 - DEBUG - Application running

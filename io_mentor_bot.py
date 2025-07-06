@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
-from utils import fix_turkish_chars, filter_key_points, detect_correct_agent, parse_json_safely
+from utils import fix_turkish_chars, filter_key_points, detect_correct_agent
 from agents_config import translations, agent_task_mapping, agent_icons
 from social_links import create_social_links
 from workflow import run_workflow

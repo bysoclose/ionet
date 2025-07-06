@@ -55,3 +55,10 @@ def detect_correct_agent(user_input, current_language):
 
     # Varsayılan
     return "Custom Agent"
+
+def parse_json_safely(json_string):
+    """Safely parse a JSON string, returning None if parsing fails."""
+    try:
+        return json.loads(json_string)
+    except json.JSONDecodeError:
+        return None
