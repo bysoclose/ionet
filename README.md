@@ -27,36 +27,30 @@ Watch the demo: [AI Hack Mentor Bot Demo](https://github.com/user-attachments/as
 
 ## ✨ Features
 
-- 📚 **Summarization**: Condenses long technical texts into concise summaries with key points.
-- 😊 **Sentiment Analysis**: Analyzes text sentiment (positive, negative, neutral).
-- 🏷️ **Named Entity Recognition**: Identifies entities like people, organizations, and locations.
-- 🛡️ **Content Moderation**: Detects inappropriate content (hate speech, harassment).
-- 📊 **Text Classification**: Categorizes text into predefined labels.
-- 🌐 **Translation**: Translates text into multiple languages (e.g., Spanish, English).
-- ❓ **Custom Queries**: Handles flexible queries with tailored responses (e.g., explaining `io.net`).
-- 🌍 **Multi-Language GUI**: Supports English, Turkish, and German interfaces.
-- 🔗 **Social Media Integration**: Copy GitHub, Discord, and Twitter links with a click.
-- 🧹 **Chat History Management**: Clear chat history with a dedicated button.
-- 📜 **Robust Logging**: Detailed debug logs for troubleshooting.
+- 📚 Summarizes long technical texts and documents
+- 🌐 Supports multilingual interface (English, Turkish, German)
+- 🔗 Connects to the [IO Intelligence API](https://intelligence.io.solutions/) using `iointel` SDK
+- 🧑‍💻 Uses powerful models like `Llama-3.3-70B-Instruct`
+- ✅ Supports asynchronous execution for efficient performance
+- 📝 Logs errors and debug info to `debug.log`
 
 ## 💡 How It Works
 
 The bot:
-1. Launches a GUI for user interaction.
-2. Allows selection of language (English, Turkish, German) and agent (e.g., Summary, Translation).
-3. Accepts text or query input and processes it via the IO.net AI Agent API.
-4. Returns structured responses in the chat area.
-5. Supports clearing chat history and copying social media links.
+1. Prompts for API key via command line (default or custom `IOINTEL_API_KEY`)
+2. Accepts large input (text, documents, etc.) via PyQt5 GUI
+3. Sends objectives to IO.net agents using the `iointel` SDK via `https://api.intelligence.io.solutions/api/v1`
+4. Processes responses from the **Llama-3.3-70B-Instruct** model
+5. Returns structured summaries or translations in the selected language
 
 ## 🛠️ Tech Stack
 
 - Python 3.12
-- PyQt5 (GUI framework)
-- IO.net AI Agents API (powered by Llama-3-70B-Instruct)
-- deep-translator (multi-language translation)
-- asyncio (asynchronous task execution)
-- python-dotenv (environment variable management)
-
+- [IO.net AI Agents API](https://ai.io.net/ai/agents) via `iointel` SDK
+- Llama-3.3-70B-Instruct model
+- PyQt5 for GUI
+- Asyncio for asynchronous execution
+- python-dotenv for environment variables
 ## 🔧 Installation
 
 1. Clone the repository:
